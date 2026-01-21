@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Simulatore One-Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold">Simulatore TFR vs PIP</h1>
+        <p class="text-sm text-slate-600">Aggiornamento istantaneo: modifica i campi e i risultati cambiano subito.</p>
+      </div>
+      <a href="/" class="text-sm text-slate-600 hover:text-slate-900">Home</a>
+    </div>
+
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- LEFT: CONTROLS -->
+      <section class="lg:col-span-1 bg-white border rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">Parametri</h2>
+          <span id="status-pill" class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 border">Pronto</span>
+        </div>
+
+        <div class="mt-4 space-y-5">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-600">Età attuale</label>
+              <input id="age_now" type="number" class="mt-1 w-full border rounded-lg px-3 py-2" value="32">
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">Età obiettivo</label>
+              <input id="age_target" type="number" class="mt-1 w-full border rounded-lg px-3 py-2" value="67">
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">RAL attuale (€)</label>
+              <input id="ral_now" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="30000">
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">Anno assunzione</label>
+              <input id="year_hiring" type="number" class="mt-1 w-full border rounded-lg px-3 py-2" value="2020">
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">Crescita RAL (%)</label>
+              <input id="ral_growth_pct" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="0">
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">TFR già maturato (€)</label>
+              <input id="tfr_existing" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="0">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-600">TFR già maturato: dove lo consideriamo?</label>
+            <select id="tfr_existing_dest" class="mt-1 w-full border rounded-lg px-3 py-2">
+              <option value="azienda" selected>Resta in azienda (default)</option>
+              <option value="pip">Trasferito nel PIP (scenario alternativo)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-600">Inflazione media (%)</label>
+              <input id="inflation_avg_pct" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="3.06">
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">Tassaz. separata TFR (%)</label>
+              <input id="sep_tax_rate_pct" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="26">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-600">Scenario</label>
+              <select id="scenario" class="mt-1 w-full border rounded-lg px-3 py-2">
+                <option value="conservativo">Conservativo</option>
+                <option value="intermedio" selected>Intermedio</option>
+                <option value="dinamico">Dinamico</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">Linea PIP</label>
+              <select id="pip_line" class="mt-1 w-full border rounded-lg px-3 py-2">
+                <option value="garantita">Garantita</option>
+                <option value="bilanciata" selected>Bilanciata</option>
+                <option value="dinamica">Dinamica</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="border-t pt-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold">Volontari e vantaggio fiscale</h3>
+              <span class="text-xs text-slate-500">Anno base: 2026</span>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="col-span-2">
+                <label class="text-xs text-slate-600">Modalità versamento</label>
+                <select id="voluntary_mode" class="mt-1 w-full border rounded-lg px-3 py-2">
+                  <option value="manual" selected>Manuale</option>
+                  <option value="optimize_bracket">Ottimizza per scendere di scaglione (entro tetto deducibile)</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <label class="text-xs text-slate-600">Importo annuo volontari (manuale) (€)</label>
+                <input id="voluntary_amount" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="0">
+                <p class="mt-1 text-xs text-slate-500">Nel modello: caricamento applicato ai volontari (default). Il TFR conferito non “consuma” il tetto deducibile.</p>
+              </div>
+
+              <div class="col-span-2 flex items-center gap-2">
+                <input id="reinvest_tax_saving" type="checkbox" class="h-4 w-4">
+                <label for="reinvest_tax_saving" class="text-sm text-slate-700">
+                  Reinvesti il risparmio fiscale (linea aggiuntiva nel grafico)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t pt-4">
+            <h3 class="text-sm font-semibold">Costi e fiscalità PIP</h3>
+
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs text-slate-600">Caricamento su volontari (%)</label>
+                <input id="pip_load_fee_pct" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="3.0">
+              </div>
+              <div>
+                <label class="text-xs text-slate-600">Imposta rendimenti PIP (%)</label>
+                <input id="pip_return_tax_pct" type="number" step="0.01" class="mt-1 w-full border rounded-lg px-3 py-2" value="20.0">
+              </div>
+
+              <div class="col-span-2 flex items-center gap-2">
+                <input id="pip_load_on_tfr" type="checkbox" class="h-4 w-4">
+                <label for="pip_load_on_tfr" class="text-sm text-slate-700">
+                  Applica caricamento anche al TFR conferito (scenario alternativo)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t pt-4 flex items-center justify-between gap-2">
+            <button id="btn-share" class="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm">
+              Condividi
+            </button>
+            <button id="btn-pdf" class="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm">
+              Esporta PDF
+            </button>
+          </div>
+
+          <p id="error-box" class="hidden text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3"></p>
+        </div>
+      </section>
+
+      <!-- RIGHT: RESULTS -->
+      <section class="lg:col-span-2 space-y-6">
+        <section id="winner-banner" class="rounded-2xl p-6 text-white bg-slate-800">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div class="text-sm opacity-90">Soluzione più efficiente (confronto base)</div>
+              <div id="winner-name" class="text-2xl font-semibold">—</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm opacity-90">Vantaggio netto</div>
+              <div id="winner-adv" class="text-3xl font-semibold">€ —</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl shadow-sm border p-6">
+            <div class="text-sm text-slate-500">TFR in azienda</div>
+            <div id="tfr-net" class="mt-2 text-3xl font-semibold">€ —</div>
+            <div class="mt-2 text-sm text-slate-600">
+              Tasse totali: <span id="tfr-tax" class="font-medium text-rose-600">€ —</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border p-6">
+            <div class="text-sm text-slate-500">PIP</div>
+            <div id="pip-net" class="mt-2 text-3xl font-semibold">€ —</div>
+            <div class="mt-2 text-sm text-slate-600">
+              Tasse totali: <span id="pip-tax" class="font-medium text-rose-600">€ —</span>
+            </div>
+            <div class="mt-1 text-sm text-slate-600">
+              Costi totali: <span id="pip-costs" class="font-medium text-rose-600">€ —</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border p-6">
+            <div class="text-sm text-slate-500">PIP + beneficio reinvestito</div>
+            <div id="pip-plus" class="mt-2 text-3xl font-semibold">€ —</div>
+            <div class="mt-2 text-sm text-slate-600">
+              Risparmio IRPEF stimato: <span id="pip-saving" class="font-medium text-emerald-700">€ —</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border p-6">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold">Evoluzione nel tempo</h2>
+            <div class="text-sm text-slate-500">Anni simulati: <span id="years">—</span></div>
+          </div>
+          <div class="mt-4">
+            <canvas id="chart" height="90"></canvas>
+          </div>
+          <p class="mt-3 text-xs text-slate-500">Il grafico si aggiorna ad ogni modifica. Se selezioni “reinvesti risparmio fiscale” appare la terza linea.</p>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border p-6">
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="font-semibold">Dettaglio annuale</h2>
+            <div class="flex items-center gap-2">
+              <div class="inline-flex rounded-xl border bg-white p-1">
+                <button id="tab-tfr" class="px-4 py-2 rounded-lg text-sm bg-emerald-600 text-white">TFR</button>
+                <button id="tab-pip" class="px-4 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50">PIP</button>
+              </div>
+              <button id="toggle-rows" class="text-sm px-3 py-2 rounded-lg border bg-white hover:bg-slate-50">
+                Mostra tutte
+              </button>
+            </div>
+          </div>
+
+          <div id="panel-tfr" class="mt-4 overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-slate-500">
+                <tr class="border-b">
+                  <th class="text-left py-2">#</th>
+                  <th class="text-left py-2">Età</th>
+                  <th class="text-right py-2">RAL</th>
+                  <th class="text-right py-2">Quota TFR</th>
+                  <th class="text-right py-2">Rivalut. lorda</th>
+                  <th class="text-right py-2">Tassa riv.</th>
+                  <th class="text-right py-2">Montante</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-tfr"></tbody>
+            </table>
+          </div>
+
+          <div id="panel-pip" class="mt-4 overflow-x-auto hidden">
+            <table class="min-w-full text-sm">
+              <thead class="text-slate-500">
+                <tr class="border-b">
+                  <th class="text-left py-2">#</th>
+                  <th class="text-left py-2">Età</th>
+                  <th class="text-right py-2">RAL</th>
+                  <th class="text-right py-2">Volontari</th>
+                  <th class="text-right py-2">Deducibile</th>
+                  <th class="text-right py-2">Risparmio IRPEF</th>
+                  <th class="text-right py-2">Caric./Gest.</th>
+                  <th class="text-right py-2">Imp. rend.</th>
+                  <th class="text-right py-2">Montante</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-pip"></tbody>
+            </table>
+          </div>
+
+          <p id="rows-hint" class="mt-3 text-xs text-slate-500">Mostrate le prime 10 righe.</p>
+        </section>
+
+        <p class="text-xs text-slate-500">
+          Strumento a scopo informativo: non costituisce consulenza finanziaria, fiscale o previdenziale personalizzata.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // ---------- Helpers ----------
+    const euro0 = (n) => "€ " + Math.round(Number(n || 0)).toLocaleString("it-IT");
+    const pill = document.getElementById("status-pill");
+    const errorBox = document.getElementById("error-box");
+
+    const getVal = (id) => document.getElementById(id)?.value;
+    const getNum = (id) => Number(getVal(id) || 0);
+    const getInt = (id) => parseInt(getVal(id) || "0", 10);
+    const getBool = (id) => Boolean(document.getElementById(id)?.checked);
+
+    function collectParams(cache=false) {
+      return {
+        age_now: getInt("age_now"),
+        age_target: getInt("age_target"),
+        ral_now: getNum("ral_now"),
+        year_hiring: getInt("year_hiring"),
+        ral_growth_pct: getNum("ral_growth_pct"),
+        tfr_existing: getNum("tfr_existing"),
+        tfr_existing_dest: getVal("tfr_existing_dest"),
+
+        inflation_avg_pct: getNum("inflation_avg_pct"),
+        sep_tax_rate_pct: getNum("sep_tax_rate_pct"),
+        scenario: getVal("scenario"),
+        pip_line: getVal("pip_line"),
+        ltc_enabled: false,
+
+        voluntary_mode: getVal("voluntary_mode"),
+        voluntary_amount: getNum("voluntary_amount"),
+        reinvest_tax_saving: getBool("reinvest_tax_saving"),
+
+        pip_load_fee_pct: getNum("pip_load_fee_pct"),
+        pip_load_on_tfr: getBool("pip_load_on_tfr"),
+        pip_return_tax_pct: getNum("pip_return_tax_pct"),
+
+        start_year: 2026,
+        cache
+      };
+    }
+
+    function setStatus(kind, text) {
+      pill.textContent = text;
+      pill.className = "text-xs px-2 py-1 rounded-full border " + (
+        kind === "loading" ? "bg-amber-50 text-amber-700 border-amber-200" :
+        kind === "ok" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+        kind === "err" ? "bg-rose-50 text-rose-700 border-rose-200" :
+        "bg-slate-100 text-slate-700 border-slate-200"
+      );
+    }
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.remove("hidden");
+      setStatus("err", "Errore");
+    }
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.classList.add("hidden");
+    }
+
+    // ---------- Chart ----------
+    let chartInstance = null;
+    function renderChart(series) {
+      const ctx = document.getElementById("chart").getContext("2d");
+      if (chartInstance) chartInstance.destroy();
+
+      const datasets = [
+        { label: "TFR Azienda", data: series.tfr, tension: 0.25 },
+        { label: "PIP", data: series.pip, tension: 0.25 }
+      ];
+      if (series.pip_plus && series.pip_plus.length) {
+        datasets.push({ label: "PIP + Beneficio reinvestito", data: series.pip_plus, tension: 0.25 });
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: { labels: series.ages, datasets },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { ticks: { callback: (v) => "€ " + Math.round(v).toLocaleString("it-IT") } } }
+        }
+      });
+    }
+
+    // ---------- Tables ----------
+    let activeTab = "tfr";
+    let expanded = false;
+
+    function setTab(which) {
+      activeTab = which;
+      const tabTfr = document.getElementById("tab-tfr");
+      const tabPip = document.getElementById("tab-pip");
+      const panelTfr = document.getElementById("panel-tfr");
+      const panelPip = document.getElementById("panel-pip");
+
+      if (which === "tfr") {
+        panelTfr.classList.remove("hidden");
+        panelPip.classList.add("hidden");
+        tabTfr.classList.add("bg-emerald-600", "text-white");
+        tabPip.classList.remove("bg-emerald-600", "text-white");
+        tabPip.classList.add("text-slate-700");
+      } else {
+        panelPip.classList.remove("hidden");
+        panelTfr.classList.add("hidden");
+        tabPip.classList.add("bg-emerald-600", "text-white");
+        tabTfr.classList.remove("bg-emerald-600", "text-white");
+        tabTfr.classList.add("text-slate-700");
+      }
+      applyRowsVisibility();
+    }
+
+    function applyRowsVisibility() {
+      const hint = document.getElementById("rows-hint");
+      const btn = document.getElementById("toggle-rows");
+      const rows = Array.from(document.querySelectorAll(activeTab === "tfr" ? ".row-tfr" : ".row-pip"));
+      rows.forEach((r, i) => {
+        if (!expanded && i >= 10) r.classList.add("hidden");
+        if (expanded) r.classList.remove("hidden");
+      });
+      btn.textContent = expanded ? "Mostra meno" : "Mostra tutte";
+      hint.textContent = expanded ? "Mostrate tutte le righe." : "Mostrate le prime 10 righe.";
+    }
+
+    function fillTables(result) {
+      const tBodyTfr = document.getElementById("tbody-tfr");
+      const tBodyPip = document.getElementById("tbody-pip");
+
+      tBodyTfr.innerHTML = result.annual_rows_tfr.map(r => `
+        <tr class="border-b row-tfr">
+          <td class="py-2">${r.year_index}</td>
+          <td class="py-2">${r.age}</td>
+          <td class="py-2 text-right">${euro0(r.ral)}</td>
+          <td class="py-2 text-right">${euro0(r.tfr_quota)}</td>
+          <td class="py-2 text-right">${euro0(r.tfr_reval_gross)}</td>
+          <td class="py-2 text-right text-rose-600">${euro0(r.tfr_reval_tax)}</td>
+          <td class="py-2 text-right">${euro0(r.tfr_balance)}</td>
+        </tr>
+      `).join("");
+
+      tBodyPip.innerHTML = result.annual_rows_pip.map(r => `
+        <tr class="border-b row-pip">
+          <td class="py-2">${r.year_index}</td>
+          <td class="py-2">${r.age}</td>
+          <td class="py-2 text-right">${euro0(r.ral)}</td>
+          <td class="py-2 text-right">${euro0(r.contribution)}</td>
+          <td class="py-2 text-right">${euro0(r.deductible)}</td>
+          <td class="py-2 text-right text-emerald-700">${euro0(r.tax_saving)}</td>
+          <td class="py-2 text-right text-rose-600">${euro0((r.load_fee || 0) + (r.mgmt_fee || 0))}</td>
+          <td class="py-2 text-right text-rose-600">${euro0(r.return_tax)}</td>
+          <td class="py-2 text-right">${euro0(r.balance)}</td>
+        </tr>
+      `).join("");
+
+      applyRowsVisibility();
+    }
+
+    // ---------- Render results ----------
+    let lastShareUrl = "";
+    async function runSim(cache=false) {
+      clearError();
+      setStatus("loading", "Calcolo…");
+
+      const payload = collectParams(cache);
+
+      try {
+        const res = await fetch("/api/simulate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.detail || "Errore nel calcolo.");
+        }
+
+        const r = data.result;
+        lastShareUrl = data.share_url || "";
+
+        // banner vincitore
+        const winnerName = document.getElementById("winner-name");
+        const winnerAdv = document.getElementById("winner-adv");
+        const banner = document.getElementById("winner-banner");
+
+        winnerName.textContent = (r.winner === "PIP") ? "PIP (previdenza complementare)" : "TFR in azienda";
+        winnerAdv.textContent = euro0(r.advantage);
+        banner.classList.toggle("bg-emerald-600", r.winner === "PIP");
+        banner.classList.toggle("bg-slate-800", r.winner !== "PIP");
+
+        // cards
+        document.getElementById("tfr-net").textContent = euro0(r.tfr.net);
+        document.getElementById("tfr-tax").textContent = euro0(r.tfr.tax_total);
+
+        document.getElementById("pip-net").textContent = euro0(r.pip.net);
+        document.getElementById("pip-tax").textContent = euro0(r.pip.tax_total);
+        document.getElementById("pip-costs").textContent = euro0(r.pip.costs_total);
+
+        document.getElementById("pip-plus").textContent = euro0(r.pip.net_plus_reinvest);
+        document.getElementById("pip-saving").textContent = euro0(r.pip.tax_saving_total);
+
+        document.getElementById("years").textContent = r.years;
+
+        // chart + tables
+        renderChart(r.series);
+        fillTables(r);
+
+        setStatus("ok", "Aggiornato");
+
+        // se cache=true e ho rid, scarico PDF
+        if (cache && data.rid) {
+          window.open(`/simulatore/pdf/${data.rid}`, "_blank");
+        }
+      } catch (e) {
+        showError(e.message || "Errore non gestito.");
+      }
+    }
+
+    // ---------- Debounce ----------
+    let t = null;
+    function scheduleRun() {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => runSim(false), 250);
+    }
+
+    // ---------- Querystring autofill ----------
+    function applyQuerystring() {
+      const qs = new URLSearchParams(window.location.search);
+      if (!qs.size) return;
+
+      const map = {
+        age_now: "age_now",
+        age_target: "age_target",
+        ral_now: "ral_now",
+        year_hiring: "year_hiring",
+        ral_growth_pct: "ral_growth_pct",
+        tfr_existing: "tfr_existing",
+        tfr_existing_dest: "tfr_existing_dest",
+        inflation_avg_pct: "inflation_avg_pct",
+        sep_tax_rate_pct: "sep_tax_rate_pct",
+        scenario: "scenario",
+        pip_line: "pip_line",
+        voluntary_mode: "voluntary_mode",
+        voluntary_amount: "voluntary_amount",
+        pip_load_fee_pct: "pip_load_fee_pct",
+        pip_return_tax_pct: "pip_return_tax_pct",
+      };
+
+      for (const [k, id] of Object.entries(map)) {
+        if (qs.has(k) && document.getElementById(id)) {
+          document.getElementById(id).value = qs.get(k);
+        }
+      }
+
+      if (qs.has("reinvest_tax_saving")) document.getElementById("reinvest_tax_saving").checked = ["1","true","yes","on"].includes((qs.get("reinvest_tax_saving")||"").toLowerCase());
+      if (qs.has("pip_load_on_tfr")) document.getElementById("pip_load_on_tfr").checked = ["1","true","yes","on"].includes((qs.get("pip_load_on_tfr")||"").toLowerCase());
+    }
+
+    // ---------- Events ----------
+    const idsToWatch = [
+      "age_now","age_target","ral_now","year_hiring","ral_growth_pct","tfr_existing","tfr_existing_dest",
+      "inflation_avg_pct","sep_tax_rate_pct","scenario","pip_line",
+      "voluntary_mode","voluntary_amount","reinvest_tax_saving",
+      "pip_load_fee_pct","pip_return_tax_pct","pip_load_on_tfr",
+    ];
+
+    idsToWatch.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", scheduleRun);
+      el.addEventListener("change", scheduleRun);
+    });
+
+    document.getElementById("tab-tfr").addEventListener("click", () => setTab("tfr"));
+    document.getElementById("tab-pip").addEventListener("click", () => setTab("pip"));
+
+    document.getElementById("toggle-rows").addEventListener("click", () => {
+      expanded = !expanded;
+      applyRowsVisibility();
+    });
+
+    document.getElementById("btn-share").addEventListener("click", async () => {
+      if (!lastShareUrl) return;
+      try {
+        await navigator.clipboard.writeText(lastShareUrl);
+        setStatus("ok", "Link copiato");
+        setTimeout(() => setStatus("ok", "Aggiornato"), 900);
+      } catch {
+        prompt("Copia questo link:", lastShareUrl);
+      }
+    });
+
+    document.getElementById("btn-pdf").addEventListener("click", () => runSim(true));
+
+    // boot
+    applyQuerystring();
+    setTab("tfr");
+    runSim(false);
+  </script>
+</body>
+</html>

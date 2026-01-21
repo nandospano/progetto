@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Parametri</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-3xl mx-auto px-6 py-10">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Parametri simulazione</h1>
+      <a href="/simulatore" class="text-sm text-slate-600 hover:text-slate-900">Indietro</a>
+    </div>
+
+    <form class="mt-8 bg-white border rounded-2xl p-6 shadow-sm" method="post" action="/simulatore/risultati">
+      <!-- Hidden Step1 -->
+      <input type="hidden" name="age_now" value="{{ data.age_now }}">
+      <input type="hidden" name="age_target" value="{{ data.age_target }}">
+      <input type="hidden" name="ral_now" value="{{ data.ral_now }}">
+      <input type="hidden" name="year_hiring" value="{{ data.year_hiring }}">
+      <input type="hidden" name="ral_growth_pct" value="{{ data.ral_growth_pct }}">
+      <input type="hidden" name="tfr_existing" value="{{ data.tfr_existing }}">
+      <input type="hidden" name="tfr_existing_dest" value="{{ data.tfr_existing_dest }}">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm text-slate-600">Inflazione media (%)</label>
+          <input name="inflation_avg_pct" type="number" step="0.01" value="3.06" class="mt-1 w-full border rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Tassazione separata TFR finale (%)</label>
+          <input name="sep_tax_rate_pct" type="number" step="0.01" value="26" class="mt-1 w-full border rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Scenario</label>
+          <select name="scenario" class="mt-1 w-full border rounded-lg px-3 py-2">
+            <option value="conservativo">Conservativo</option>
+            <option value="intermedio" selected>Intermedio</option>
+            <option value="dinamico">Dinamico</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Linea PIP</label>
+          <select name="pip_line" class="mt-1 w-full border rounded-lg px-3 py-2">
+            <option value="garantita">Garantita</option>
+            <option value="bilanciata" selected>Bilanciata</option>
+            <option value="dinamica">Dinamica</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Volontari + fiscale -->
+      <div class="mt-6 border-t pt-6">
+        <h2 class="font-semibold">Versamenti volontari e vantaggio fiscale</h2>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm text-slate-600">Modalità versamento</label>
+            <select name="voluntary_mode" class="mt-1 w-full border rounded-lg px-3 py-2">
+              <option value="manual" selected>Manuale</option>
+              <option value="optimize_bracket">Ottimizza per scendere di scaglione (se possibile)</option>
+            </select>
+            <p class="mt-2 text-xs text-slate-500">
+              Con “ottimizza” il sistema prova ogni anno a versare quanto serve per rientrare nello scaglione IRPEF inferiore,
+              entro il tetto deducibile.
+            </p>
+          </div>
+
+          <div>
+            <label class="text-sm text-slate-600">Importo annuo (manuale) (€)</label>
+            <input name="voluntary_amount" type="number" step="0.01" value="0" class="mt-1 w-full border rounded-lg px-3 py-2">
+            <p class="mt-2 text-xs text-slate-500">
+              La deduzione annua è limitata (dal 2026: € 5.300). Il TFR conferito non rientra in questo limite.
+            </p>
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-2">
+            <input id="reinvest" name="reinvest_tax_saving" type="checkbox" class="h-4 w-4">
+            <label for="reinvest" class="text-sm text-slate-700">
+              Reinvesti il risparmio fiscale (simulazione “PIP + beneficio reinvestito”)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Costi PIP -->
+      <div class="mt-6 border-t pt-6">
+        <h2 class="font-semibold">Costi e fiscalità PIP (parametri)</h2>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm text-slate-600">Caricamento su volontari (%)</label>
+            <input name="pip_load_fee_pct" type="number" step="0.01" value="3.0" class="mt-1 w-full border rounded-lg px-3 py-2">
+          </div>
+
+          <div>
+            <label class="text-sm text-slate-600">Imposta rendimenti PIP (%)</label>
+            <input name="pip_return_tax_pct" type="number" step="0.01" value="20.0" class="mt-1 w-full border rounded-lg px-3 py-2">
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-2">
+            <input id="loadtfr" name="pip_load_on_tfr" type="checkbox" class="h-4 w-4">
+            <label for="loadtfr" class="text-sm text-slate-700">
+              Applica caricamento anche al TFR conferito (scenario alternativo)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <a href="/simulatore" class="px-5 py-2 rounded-lg border bg-white hover:bg-slate-50">Indietro</a>
+        <button class="px-5 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+          Calcola risultati
+        </button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

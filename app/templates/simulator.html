@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Simulatore TFR vs Alleata Previdenza</title>
+
+  <!-- Favicon: evita 404 in console -->
+  <link rel="icon" href="data:,">
+
+  <!-- Tailwind config: PRIMA del CDN, e via window.tailwind (fix 'tailwind is not defined') -->
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            alleanza: {
+              blue: "#0B2E5B",
+              blue2: "#123D73",
+              orange: "#F37021",
+              ink: "#0B1220"
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* micro-tuning per “look” più premium */
+    .shadow-soft { box-shadow: 0 10px 30px rgba(11,18,32,.08); }
+  </style>
+</head>
+
+
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <header class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold">Simulatore TFR in azienda vs Alleata Previdenza</h1>
+        <p class="mt-1 text-sm text-slate-600">
+          One-page interattiva: modifica i parametri e i risultati si aggiornano in tempo reale.
+        </p>
+      </div>
+      <a href="/" class="text-sm text-slate-600 hover:text-slate-900">Home</a>
+    </header>
+
+    <section class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- INPUTS -->
+      <aside class="lg:col-span-4 bg-white rounded-2xl border shadow-sm p-5">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">Parametri</h2>
+          <button id="btn-recalc"
+                  class="text-sm px-3 py-2 rounded-lg bg-alleanza-blue text-white hover:opacity-95">
+            Ricalcola
+          </button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <label class="text-sm">
+            <span class="text-slate-600">Età attuale</span>
+            <input id="age_now" type="number" min="18" max="80" class="mt-1 w-full rounded-lg border px-3 py-2" value="35">
+          </label>
+          <label class="text-sm">
+            <span class="text-slate-600">Età target</span>
+            <input id="age_target" type="number" min="19" max="90" class="mt-1 w-full rounded-lg border px-3 py-2" value="67">
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">RAL attuale (€)</span>
+            <input id="ral_now" type="number" min="0" step="100" class="mt-1 w-full rounded-lg border px-3 py-2" value="30000">
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Anno assunzione</span>
+            <input id="year_hiring" type="number" min="1980" max="2100" class="mt-1 w-full rounded-lg border px-3 py-2" value="2020">
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Crescita RAL annua (%)</span>
+            <input id="ral_growth_pct" type="number" step="0.1" class="mt-1 w-full rounded-lg border px-3 py-2" value="0.0">
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">TFR già maturato (€)</span>
+            <input id="tfr_existing" type="number" min="0" step="100" class="mt-1 w-full rounded-lg border px-3 py-2" value="0">
+          </label>
+        </div>
+
+        <hr class="my-5">
+
+        <h3 class="font-semibold text-sm">TFR in azienda</h3>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <label class="text-sm">
+            <span class="text-slate-600">Inflazione media (%)</span>
+            <input id="inflation_avg_pct" type="number" step="0.01" class="mt-1 w-full rounded-lg border px-3 py-2" value="3.06">
+          </label>
+          <label class="text-sm">
+            <span class="text-slate-600">Tassa finale separata (%)</span>
+            <input id="sep_tax_rate_pct" type="number" step="0.1" class="mt-1 w-full rounded-lg border px-3 py-2" value="26.0">
+          </label>
+        </div>
+
+        <hr class="my-5">
+
+        <h3 class="font-semibold text-sm">Alleata Previdenza (PIP)</h3>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Linea</span>
+            <select id="pip_line" class="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="life_cycle" selected>Life Cycle (guidato)</option>
+              <option value="garantita">Alleata Garantita</option>
+              <option value="bilanciata">Alleata Bilanciata</option>
+              <option value="azionaria">Alleata Azionaria</option>
+            </select>
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Scenario rendimenti (attesi)</span>
+            <select id="scenario" class="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="prudente">Prudente</option>
+              <option value="intermedio" selected>Intermedio</option>
+              <option value="dinamico">Dinamico</option>
+            </select>
+          </label>
+
+          <label class="text-sm col-span-2 flex items-center gap-2">
+            <input id="ltc_enabled" type="checkbox" class="rounded border">
+            <span class="text-slate-700">Attiva copertura LTC (caricamento 4,5%)</span>
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Versamento volontario annuo (€)</span>
+            <input id="voluntary_annual" type="number" min="0" step="50" class="mt-1 w-full rounded-lg border px-3 py-2" value="0">
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Reddito imponibile stimato (€) (facoltativo)</span>
+            <input id="taxable_income" type="number" min="0" step="100" class="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Se vuoto uso la RAL">
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Modello IRPEF (stima risparmio)</span>
+            <select id="irpef_model" class="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="2026" selected>2026 (23% / 33% / 43%)</option>
+              <option value="2025">2025 (23% / 35% / 43%)</option>
+            </select>
+          </label>
+
+          <label class="text-sm col-span-2">
+            <span class="text-slate-600">Profilo costi</span>
+            <select id="cost_profile" class="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="post_2023" selected>Adesioni dal 24/07/2023</option>
+              <option value="2020_2023">Adesioni 24/02/2020 – 23/07/2023</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="mt-5 rounded-xl border bg-slate-50 p-3">
+          <div class="text-xs text-slate-500">Stato calcolo</div>
+          <div id="status" class="text-sm font-medium text-slate-800">Pronto.</div>
+        </div>
+      </aside>
+
+      <!-- RESULTS -->
+      <section class="lg:col-span-8 space-y-6">
+        <div id="winnerCard" class="rounded-2xl p-6 text-white bg-slate-800">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div class="text-sm opacity-90">Soluzione più efficiente</div>
+              <div id="winnerLabel" class="text-2xl font-semibold">—</div>
+              <div id="winnerSub" class="mt-1 text-sm opacity-90">—</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm opacity-90">Vantaggio netto stimato</div>
+              <div id="advantage" class="text-3xl font-semibold">€ —</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <div class="text-sm text-slate-500">TFR in azienda (netto)</div>
+            <div id="tfrNet" class="mt-2 text-2xl font-semibold">€ —</div>
+            <div class="mt-2 text-sm text-slate-600">
+              Tasse totali: <span id="tfrTaxes" class="font-medium text-rose-600">€ —</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <div class="text-sm text-slate-500">PIP (netto)</div>
+            <div id="pipNet" class="mt-2 text-2xl font-semibold">€ —</div>
+            <div class="mt-2 text-sm text-slate-600">
+              Tasse totali: <span id="pipTaxes" class="font-medium text-rose-600">€ —</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <div class="text-sm text-slate-500">Beneficio fiscale stimato</div>
+            <div id="taxSaveTotal" class="mt-2 text-2xl font-semibold">€ —</div>
+            <div class="mt-2 text-xs text-slate-500">(solo su versamenti volontari)</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border shadow-sm p-6">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="font-semibold">Evoluzione montante</h2>
+            <div class="text-sm text-slate-500">Anni simulati: <span id="yearsLabel">—</span></div>
+          </div>
+          <div class="mt-4">
+            <canvas id="chart" height="90"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border shadow-sm p-6">
+          <h2 class="font-semibold">Assunzioni e costi usati</h2>
+          <div class="mt-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-center text-sm">
+            <div class="bg-slate-50 border rounded-xl p-3">
+              <div class="text-xs text-slate-500">Inflazione</div>
+              <div id="aInfl" class="font-semibold">—</div>
+            </div>
+            <div class="bg-slate-50 border rounded-xl p-3">
+              <div class="text-xs text-slate-500">Rivalut. TFR</div>
+              <div id="aReval" class="font-semibold">—</div>
+            </div>
+            <div class="bg-slate-50 border rounded-xl p-3">
+              <div class="text-xs text-slate-500">Linea PIP</div>
+              <div id="aLine" class="font-semibold">—</div>
+            </div>
+            <div class="bg-slate-50 border rounded-xl p-3">
+              <div class="text-xs text-slate-500">Rend. atteso</div>
+              <div id="aRet" class="font-semibold">—</div>
+            </div>
+            <div class="bg-slate-50 border rounded-xl p-3">
+              <div class="text-xs text-slate-500">Caricamento</div>
+              <div id="aLoad" class="font-semibold">—</div>
+            </div>
+            <div class="bg-slate-50 border rounded-xl p-3">
+              <div class="text-xs text-slate-500">Tassa finale PIP</div>
+              <div id="aPipFinalTax" class="font-semibold">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border shadow-sm p-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <h2 class="font-semibold">Dettaglio annuale</h2>
+
+            <div class="inline-flex rounded-xl border bg-white p-1">
+              <button id="tab-tfr" class="px-4 py-2 rounded-lg text-sm bg-alleanza-blue text-white">TFR</button>
+              <button id="tab-pip" class="px-4 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50">PIP</button>
+            </div>
+
+            <button id="toggle-rows" class="text-sm px-3 py-2 rounded-lg border bg-white hover:bg-slate-50">
+              Mostra tutte
+            </button>
+          </div>
+
+          <div id="panel-tfr" class="mt-4 overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-slate-500">
+                <tr class="border-b">
+                  <th class="text-left py-2">#</th>
+                  <th class="text-left py-2">Età</th>
+                  <th class="text-right py-2">RAL</th>
+                  <th class="text-right py-2">Quota TFR</th>
+                  <th class="text-right py-2">Rivalut. lorda</th>
+                  <th class="text-right py-2">Tassa riv.</th>
+                  <th class="text-right py-2">Montante</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-tfr"></tbody>
+            </table>
+          </div>
+
+          <div id="panel-pip" class="mt-4 overflow-x-auto hidden">
+            <table class="min-w-full text-sm">
+              <thead class="text-slate-500">
+                <tr class="border-b">
+                  <th class="text-left py-2">#</th>
+                  <th class="text-left py-2">Età</th>
+                  <th class="text-right py-2">RAL</th>
+                  <th class="text-right py-2">Versam. tot</th>
+                  <th class="text-right py-2">TFR</th>
+                  <th class="text-right py-2">Vol.</th>
+                  <th class="text-right py-2">Caricam.</th>
+                  <th class="text-right py-2">Gestione</th>
+                  <th class="text-right py-2">Imposta rend.</th>
+                  <th class="text-right py-2">Montante</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-pip"></tbody>
+            </table>
+          </div>
+
+          <p id="rows-hint" class="mt-3 text-xs text-slate-500">Mostrate le prime 10 righe.</p>
+        </div>
+
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <p class="text-xs text-slate-500">
+            Strumento informativo: non costituisce consulenza personalizzata.
+          </p>
+
+          <div class="flex gap-2">
+            <button id="btn-share" class="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50">
+              Condividi
+            </button>
+            <a id="btn-pdf" href="#" class="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50 pointer-events-none opacity-50">
+              Esporta PDF
+            </a>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Stato server in JSON (qui Jinja va bene: NON è JS) -->
+  <script type="application/json" id="server-state">
+    {{ {
+      "initial_payload": initial_payload,
+      "initial_result": initial_result,
+      "rid": rid,
+      "share_url": share_url
+    } | tojson }}
+  </script>
+
+  <script>
+    const state = JSON.parse(document.getElementById("server-state").textContent || "{}");
+    const INITIAL_RESULT = state.initial_result || null;
+    let RID = state.rid || null;
+    let SHARE_URL = state.share_url || "";
+
+    // UI helpers
+    const eur = (n) => (n === null || n === undefined || isNaN(n)) ? "—" : ("€ " + Math.round(n).toLocaleString("it-IT"));
+    const pct = (n) => (n === null || n === undefined || isNaN(n)) ? "—" : (String(n).replace(".", ",") + "%");
+
+    const el = (id) => document.getElementById(id);
+    const statusEl = el("status");
+    const setStatus = (s) => statusEl.textContent = s;
+
+    const inputs = [
+      "age_now","age_target","ral_now","year_hiring","ral_growth_pct","tfr_existing",
+      "inflation_avg_pct","sep_tax_rate_pct","scenario","pip_line","ltc_enabled",
+      "voluntary_annual","taxable_income","irpef_model","cost_profile"
+    ].reduce((acc, id) => (acc[id] = el(id), acc), {});
+
+    // Output targets
+    const winnerCard = el("winnerCard");
+    const winnerLabel = el("winnerLabel");
+    const winnerSub = el("winnerSub");
+    const advantageEl = el("advantage");
+    const tfrNet = el("tfrNet");
+    const pipNet = el("pipNet");
+    const tfrTaxes = el("tfrTaxes");
+    const pipTaxes = el("pipTaxes");
+    const yearsLabel = el("yearsLabel");
+    const taxSaveTotal = el("taxSaveTotal");
+
+    const aInfl = el("aInfl");
+    const aReval = el("aReval");
+    const aLine = el("aLine");
+    const aRet = el("aRet");
+    const aLoad = el("aLoad");
+    const aPipFinalTax = el("aPipFinalTax");
+
+    const tbodyTfr = el("tbody-tfr");
+    const tbodyPip = el("tbody-pip");
+
+    const tabTfr = el("tab-tfr");
+    const tabPip = el("tab-pip");
+    const panelTfr = el("panel-tfr");
+    const panelPip = el("panel-pip");
+    const toggleRowsBtn = el("toggle-rows");
+    const rowsHint = el("rows-hint");
+
+    const shareBtn = el("btn-share");
+    const pdfBtn = el("btn-pdf");
+
+    let chartInstance = null;
+
+    // Tabs + rows
+    let activeTab = "tfr";
+    let expanded = false;
+
+    function setTab(which) {
+      activeTab = which;
+      if (which === "tfr") {
+        panelTfr.classList.remove("hidden");
+        panelPip.classList.add("hidden");
+        tabTfr.classList.add("bg-alleanza-blue","text-white");
+        tabPip.classList.remove("bg-alleanza-blue","text-white");
+        tabPip.classList.add("text-slate-700");
+      } else {
+        panelPip.classList.remove("hidden");
+        panelTfr.classList.add("hidden");
+        tabPip.classList.add("bg-alleanza-blue","text-white");
+        tabTfr.classList.remove("bg-alleanza-blue","text-white");
+        tabTfr.classList.add("text-slate-700");
+      }
+      applyRows();
+    }
+
+    tabTfr.addEventListener("click", () => setTab("tfr"));
+    tabPip.addEventListener("click", () => setTab("pip"));
+
+    function applyRows() {
+      const rows = Array.from(document.querySelectorAll(activeTab === "tfr" ? ".row-tfr" : ".row-pip"));
+      rows.forEach((r, i) => {
+        if (!expanded && i >= 10) r.classList.add("hidden");
+        if (expanded) r.classList.remove("hidden");
+      });
+      toggleRowsBtn.textContent = expanded ? "Mostra meno" : "Mostra tutte";
+      rowsHint.textContent = expanded ? "Mostrate tutte le righe." : "Mostrate le prime 10 righe.";
+    }
+
+    toggleRowsBtn.addEventListener("click", () => {
+      expanded = !expanded;
+      applyRows();
+    });
+
+    function readPayload() {
+      const taxableVal = inputs.taxable_income.value.trim();
+      return {
+        age_now: parseInt(inputs.age_now.value, 10),
+        age_target: parseInt(inputs.age_target.value, 10),
+        ral_now: parseFloat(inputs.ral_now.value),
+        year_hiring: parseInt(inputs.year_hiring.value, 10),
+        ral_growth_pct: parseFloat(inputs.ral_growth_pct.value || "0"),
+        tfr_existing: parseFloat(inputs.tfr_existing.value || "0"),
+
+        inflation_avg_pct: parseFloat(inputs.inflation_avg_pct.value || "3.06"),
+        sep_tax_rate_pct: parseFloat(inputs.sep_tax_rate_pct.value || "26"),
+
+        scenario: inputs.scenario.value,
+        pip_line: inputs.pip_line.value,
+        ltc_enabled: inputs.ltc_enabled.checked,
+
+        voluntary_annual: parseFloat(inputs.voluntary_annual.value || "0"),
+        taxable_income: (taxableVal === "" ? null : parseFloat(taxableVal)),
+        irpef_model: inputs.irpef_model.value,
+        cost_profile: inputs.cost_profile.value,
+      };
+    }
+
+    function render(res) {
+      yearsLabel.textContent = res.years;
+
+      const isPip = (res.winner === "PIP");
+      winnerLabel.textContent = isPip ? "PIP (Alleata Previdenza)" : "TFR in azienda";
+      winnerSub.textContent = "Migliore netto stimato a scadenza";
+      advantageEl.textContent = eur(res.advantage);
+
+      winnerCard.classList.remove("bg-slate-800","bg-alleanza-blue");
+      winnerCard.classList.add(isPip ? "bg-alleanza-blue" : "bg-slate-800");
+
+      tfrNet.textContent = eur(res.tfr.net);
+      pipNet.textContent = eur(res.pip.net);
+      tfrTaxes.textContent = eur(res.tfr.tax_total);
+      pipTaxes.textContent = eur(res.pip.tax_total);
+      taxSaveTotal.textContent = eur(res.tax_benefit.saving_total);
+
+      aInfl.textContent = pct(res.assumptions.inflation_avg_pct);
+      aReval.textContent = pct(res.assumptions.tfr_reval_rate_pct);
+      aLine.textContent = res.assumptions.pip_line;
+      aRet.textContent = pct(res.assumptions.pip_return_gross_pct);
+      aLoad.textContent = pct(res.assumptions.pip_load_fee_pct);
+      aPipFinalTax.textContent = pct(res.assumptions.pip_final_tax_pct);
+
+      // Chart
+      const ctx = document.getElementById("chart").getContext("2d");
+      if (!chartInstance) {
+        chartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: res.series.ages,
+            datasets: [
+              { label: "TFR Azienda", data: res.series.tfr, tension: 0.25 },
+              { label: "PIP", data: res.series.pip, tension: 0.25 }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } },
+            scales: { y: { ticks: { callback: (v) => "€ " + Math.round(v).toLocaleString("it-IT") } } }
+          }
+        });
+      } else {
+        chartInstance.data.labels = res.series.ages;
+        chartInstance.data.datasets[0].data = res.series.tfr;
+        chartInstance.data.datasets[1].data = res.series.pip;
+        chartInstance.update();
+      }
+
+      // Tables
+      tbodyTfr.innerHTML = res.annual_rows_tfr.map((r, idx) => `
+        <tr class="border-b row-tfr ${(!expanded && idx>=10) ? 'hidden' : ''}">
+          <td class="py-2">${r.year_index}</td>
+          <td class="py-2">${r.age}</td>
+          <td class="py-2 text-right">${eur(r.ral)}</td>
+          <td class="py-2 text-right">${eur(r.tfr_quota)}</td>
+          <td class="py-2 text-right">${eur(r.tfr_reval_gross)}</td>
+          <td class="py-2 text-right text-rose-600">${eur(r.tfr_reval_tax)}</td>
+          <td class="py-2 text-right">${eur(r.tfr_balance)}</td>
+        </tr>
+      `).join("");
+
+      tbodyPip.innerHTML = res.annual_rows_pip.map((r, idx) => `
+        <tr class="border-b row-pip ${(!expanded && idx>=10) ? 'hidden' : ''}">
+          <td class="py-2">${r.year_index}</td>
+          <td class="py-2">${r.age}</td>
+          <td class="py-2 text-right">${eur(r.ral)}</td>
+          <td class="py-2 text-right">${eur(r.contribution_total)}</td>
+          <td class="py-2 text-right">${eur(r.contribution_tfr)}</td>
+          <td class="py-2 text-right">${eur(r.contribution_voluntary)}</td>
+          <td class="py-2 text-right text-rose-600">${eur(r.load_fee)}</td>
+          <td class="py-2 text-right text-rose-600">${eur(r.mgmt_fee)}</td>
+          <td class="py-2 text-right text-rose-600">${eur(r.return_tax)}</td>
+          <td class="py-2 text-right">${eur(r.balance)}</td>
+        </tr>
+      `).join("");
+
+      applyRows();
+    }
+
+    // API call
+    let chartDebounce = null;
+
+    async function doSimulate() {
+      setStatus("Calcolo in corso…");
+      const payload = readPayload();
+
+      try {
+        const resp = await fetch("/api/simulate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) throw new Error(await resp.text());
+
+        const data = await resp.json();
+        RID = data.rid;
+        SHARE_URL = data.share_url;
+
+        pdfBtn.href = data.pdf_url;
+        pdfBtn.classList.remove("pointer-events-none","opacity-50");
+
+        render(data.result);
+        setStatus("Aggiornato.");
+      } catch (e) {
+        console.error(e);
+        setStatus("Errore: controlla i parametri.");
+      }
+    }
+
+    function queueSimulate() {
+      if (chartDebounce) clearTimeout(chartDebounce);
+      chartDebounce = setTimeout(doSimulate, 250);
+    }
+
+    Object.values(inputs).forEach((node) => {
+      node.addEventListener("input", queueSimulate);
+      node.addEventListener("change", queueSimulate);
+    });
+
+    el("btn-recalc").addEventListener("click", doSimulate);
+
+    // Share
+    shareBtn.addEventListener("click", async () => {
+      if (!SHARE_URL) return;
+      try {
+        await navigator.clipboard.writeText(SHARE_URL);
+        const old = shareBtn.textContent;
+        shareBtn.textContent = "Copiato!";
+        setTimeout(() => shareBtn.textContent = old, 1200);
+      } catch {
+        prompt("Copia questo link:", SHARE_URL);
+      }
+    });
+
+    // Init
+    setTab("tfr");
+    if (INITIAL_RESULT) {
+      setStatus("Caricato da link condiviso.");
+      render(INITIAL_RESULT);
+      if (RID) {
+        pdfBtn.href = "/simulatore/pdf/" + RID;
+        pdfBtn.classList.remove("pointer-events-none","opacity-50");
+      }
+    } else {
+      doSimulate();
+    }
+  </script>
+</body>
+</html>

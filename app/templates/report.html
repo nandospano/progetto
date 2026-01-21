@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Report PDF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-white text-slate-900">
+  <main class="max-w-6xl mx-auto px-8 py-10">
+    <section class="border rounded-2xl p-8">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-xs uppercase tracking-wide text-slate-500">Report simulazione</div>
+          <h1 class="mt-2 text-3xl font-semibold">TFR in azienda vs PIP</h1>
+          <p class="mt-2 text-sm text-slate-600">Documento generato automaticamente sulla base dei parametri inseriti.</p>
+        </div>
+        <div class="text-right text-sm text-slate-600">
+          <div><span class="text-slate-400">Anno base:</span> {{ result.assumptions.start_year }}</div>
+          <div><span class="text-slate-400">Anni simulati:</span> {{ result.years }}</div>
+          <div class="mt-2"><span class="text-slate-400">Scenario:</span> {{ result.assumptions.scenario }}</div>
+          <div><span class="text-slate-400">Linea PIP:</span> {{ result.assumptions.pip_line }}</div>
+        </div>
+      </div>
+
+      <div class="mt-6 grid grid-cols-3 gap-4">
+        <div class="border rounded-xl p-4">
+          <div class="text-xs text-slate-500">TFR netto (azienda)</div>
+          <div class="mt-1 text-2xl font-semibold">€ {{ "{:,.0f}".format(result.tfr.net).replace(",", ".") }}</div>
+          <div class="mt-2 text-xs text-slate-500">Tasse totali</div>
+          <div class="text-sm text-rose-600 font-medium">€ {{ "{:,.0f}".format(result.tfr.tax_total).replace(",", ".") }}</div>
+        </div>
+        <div class="border rounded-xl p-4">
+          <div class="text-xs text-slate-500">PIP netto</div>
+          <div class="mt-1 text-2xl font-semibold">€ {{ "{:,.0f}".format(result.pip.net).replace(",", ".") }}</div>
+          <div class="mt-2 text-xs text-slate-500">Costi totali</div>
+          <div class="text-sm text-rose-600 font-medium">€ {{ "{:,.0f}".format(result.pip.costs_total).replace(",", ".") }}</div>
+        </div>
+        <div class="border rounded-xl p-4">
+          <div class="text-xs text-slate-500">PIP + beneficio reinvestito</div>
+          <div class="mt-1 text-2xl font-semibold">€ {{ "{:,.0f}".format(result.pip.net_plus_reinvest).replace(",", ".") }}</div>
+          <div class="mt-2 text-xs text-slate-500">Risparmio IRPEF stimato</div>
+          <div class="text-sm text-emerald-700 font-medium">€ {{ "{:,.0f}".format(result.pip.tax_saving_total).replace(",", ".") }}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-8 border rounded-2xl p-6">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">Evoluzione nel tempo</h2>
+        <div class="text-sm text-slate-500">Anni: {{ result.years }}</div>
+      </div>
+      <div class="mt-4">
+        <canvas id="chart" height="90"></canvas>
+      </div>
+    </section>
+
+    <section class="mt-8">
+      <h2 class="font-semibold">Dettaglio annuale - TFR</h2>
+      <div class="mt-3 overflow-x-auto border rounded-2xl p-4">
+        <table class="min-w-full text-sm">
+          <thead class="text-slate-500">
+            <tr class="border-b">
+              <th class="text-left py-2">#</th>
+              <th class="text-left py-2">Età</th>
+              <th class="text-right py-2">RAL</th>
+              <th class="text-right py-2">Quota TFR</th>
+              <th class="text-right py-2">Rivalut. lorda</th>
+              <th class="text-right py-2">Tassa riv.</th>
+              <th class="text-right py-2">Montante</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in result.annual_rows_tfr %}
+            <tr class="border-b">
+              <td class="py-2">{{ r.year_index }}</td>
+              <td class="py-2">{{ r.age }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.ral).replace(",", ".") }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.tfr_quota).replace(",", ".") }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.tfr_reval_gross).replace(",", ".") }}</td>
+              <td class="py-2 text-right text-rose-600">€ {{ "{:,.0f}".format(r.tfr_reval_tax).replace(",", ".") }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.tfr_balance).replace(",", ".") }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mt-8">
+      <h2 class="font-semibold">Dettaglio annuale - PIP</h2>
+      <div class="mt-3 overflow-x-auto border rounded-2xl p-4">
+        <table class="min-w-full text-sm">
+          <thead class="text-slate-500">
+            <tr class="border-b">
+              <th class="text-left py-2">#</th>
+              <th class="text-left py-2">Età</th>
+              <th class="text-right py-2">RAL</th>
+              <th class="text-right py-2">Volontari</th>
+              <th class="text-right py-2">Deducibile</th>
+              <th class="text-right py-2">Risparmio IRPEF</th>
+              <th class="text-right py-2">Caric./Gest.</th>
+              <th class="text-right py-2">Imp. rend.</th>
+              <th class="text-right py-2">Montante</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in result.annual_rows_pip %}
+            <tr class="border-b">
+              <td class="py-2">{{ r.year_index }}</td>
+              <td class="py-2">{{ r.age }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.ral).replace(",", ".") }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.contribution).replace(",", ".") }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.deductible).replace(",", ".") }}</td>
+              <td class="py-2 text-right text-emerald-700">€ {{ "{:,.0f}".format(r.tax_saving).replace(",", ".") }}</td>
+              <td class="py-2 text-right text-rose-600">€ {{ "{:,.0f}".format(r.load_fee + r.mgmt_fee).replace(",", ".") }}</td>
+              <td class="py-2 text-right text-rose-600">€ {{ "{:,.0f}".format(r.return_tax).replace(",", ".") }}</td>
+              <td class="py-2 text-right">€ {{ "{:,.0f}".format(r.balance).replace(",", ".") }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-6 text-xs text-slate-500">
+        Strumento a scopo informativo: non costituisce consulenza finanziaria, fiscale o previdenziale personalizzata.
+      </p>
+    </section>
+  </main>
+
+  <script type="application/json" id="chart-data">{{ result.series | tojson }}</script>
+  <script>
+    window.__chartReady = false;
+    try {
+      const series = JSON.parse(document.getElementById("chart-data").textContent);
+      const ctx = document.getElementById("chart").getContext("2d");
+
+      const datasets = [
+        { label: "TFR Azienda", data: series.tfr, tension: 0.25 },
+        { label: "PIP", data: series.pip, tension: 0.25 }
+      ];
+      if (series.pip_plus && series.pip_plus.length) {
+        datasets.push({ label: "PIP + Beneficio reinvestito", data: series.pip_plus, tension: 0.25 });
+      }
+
+      new Chart(ctx, {
+        type: "line",
+        data: { labels: series.ages, datasets },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { ticks: { callback: (v) => "€ " + Math.round(v).toLocaleString("it-IT") } } }
+        }
+      });
+    } catch(e) {
+      console.error(e);
+    }
+    window.__chartReady = true;
+  </script>
+</body>
+</html>

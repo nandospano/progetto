@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Simulatore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-3xl mx-auto px-6 py-10">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Simulatore TFR vs PIP</h1>
+      <a href="/" class="text-sm text-slate-600 hover:text-slate-900">Home</a>
+    </div>
+
+    <form class="mt-8 bg-white border rounded-2xl p-6 shadow-sm" method="post" action="/simulatore/step2">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm text-slate-600">Età attuale</label>
+          <input name="age_now" type="number" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="es. 32">
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Età obiettivo (pensione)</label>
+          <input name="age_target" type="number" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="es. 67">
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">RAL attuale (€)</label>
+          <input name="ral_now" type="number" step="0.01" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="es. 30000">
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Anno assunzione</label>
+          <input name="year_hiring" type="number" required class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="es. 2020">
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Crescita annua RAL (%)</label>
+          <input name="ral_growth_pct" type="number" step="0.01" value="0" class="mt-1 w-full border rounded-lg px-3 py-2">
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">TFR già maturato (€) (opzionale)</label>
+          <input name="tfr_existing" type="number" step="0.01" value="0" class="mt-1 w-full border rounded-lg px-3 py-2">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="text-sm text-slate-600">TFR già maturato: dove lo consideriamo?</label>
+          <select name="tfr_existing_dest" class="mt-1 w-full border rounded-lg px-3 py-2">
+            <option value="azienda" selected>Resta in azienda (default)</option>
+            <option value="pip">Trasferito nel PIP (scenario alternativo)</option>
+          </select>
+          <p class="mt-2 text-xs text-slate-500">
+            Nota: spesso il TFR già maturato resta in azienda; il trasferimento dipende dai casi. Qui lo rendiamo esplicito.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button class="px-5 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+          Continua
+        </button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
