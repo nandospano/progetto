@@ -4,41 +4,128 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>TFR vs PIP</title>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            alleanza: {
+              blue: "#0B2E5B",
+              orange: "#F37021"
+            }
+          }
+        }
+      }
+    };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .shadow-soft { box-shadow: 0 12px 36px rgba(15,23,42,.08); }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <main class="max-w-6xl mx-auto px-6 py-14">
-    <div class="text-center">
-      <div class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border">
-        Strumento informativo
+  <main class="max-w-6xl mx-auto px-6 py-12">
+    <section class="rounded-3xl border bg-gradient-to-br from-white via-slate-50 to-slate-100 p-8 md:p-12 shadow-soft">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border">
+            Strumento informativo gratuito
+          </div>
+          <h1 class="mt-4 text-4xl md:text-5xl font-semibold tracking-tight">
+            TFR vs Alleata Previdenza
+          </h1>
+          <p class="mt-3 text-slate-600 max-w-2xl">
+            Confronta TFR in azienda e previdenza complementare con un report chiaro: capitale a pensione,
+            tassazione totale e differenza finale, in pochi secondi.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a href="/simulatore"
+               class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-alleanza-blue text-white hover:opacity-95">
+              Avvia simulazione
+            </a>
+            <a href="#come-funziona"
+               class="inline-flex items-center justify-center px-5 py-3 rounded-xl border bg-white hover:bg-slate-50">
+              Come funziona
+            </a>
+          </div>
+        </div>
+        <div class="bg-white border rounded-2xl p-6 shadow-soft max-w-sm">
+          <div class="text-sm text-slate-500">In evidenza</div>
+          <ul class="mt-3 space-y-3 text-sm text-slate-700">
+            <li class="flex items-start gap-3">
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+              Calcolo con ipotesi trasparenti e configurabili.
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+              Grafici e tabelle annuali per un confronto puntuale.
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+              Report PDF pronto da condividere.
+            </li>
+          </ul>
+        </div>
       </div>
-      <h1 class="mt-4 text-4xl font-semibold tracking-tight">TFR vs Alleata Previdenza</h1>
-      <p class="mt-3 text-slate-600 max-w-2xl mx-auto">
-        Confronta TFR in azienda e previdenza complementare in modo chiaro: capitale a pensione, tasse e differenza finale.
-      </p>
-
-      <a href="/simulatore"
-         class="mt-7 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700">
-        Avvia simulazione
-      </a>
-    </div>
+    </section>
 
     <section class="mt-12 grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white border rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border rounded-2xl p-5 shadow-soft">
         <div class="font-medium">Calcolo chiaro</div>
-        <div class="mt-1 text-sm text-slate-600">Input essenziali, output leggibile.</div>
+        <div class="mt-1 text-sm text-slate-600">Input essenziali, output leggibile e immediato.</div>
       </div>
-      <div class="bg-white border rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border rounded-2xl p-5 shadow-soft">
         <div class="font-medium">Grafici</div>
-        <div class="mt-1 text-sm text-slate-600">Evoluzione del capitale nel tempo.</div>
+        <div class="mt-1 text-sm text-slate-600">Evoluzione del capitale nel tempo per scenario.</div>
       </div>
-      <div class="bg-white border rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border rounded-2xl p-5 shadow-soft">
         <div class="font-medium">Dettaglio tasse</div>
-        <div class="mt-1 text-sm text-slate-600">Imposte e tassazione finale.</div>
+        <div class="mt-1 text-sm text-slate-600">Imposte, tasse finali e benefici fiscali.</div>
       </div>
-      <div class="bg-white border rounded-2xl p-5 shadow-sm">
+      <div class="bg-white border rounded-2xl p-5 shadow-soft">
         <div class="font-medium">Report</div>
-        <div class="mt-1 text-sm text-slate-600">Pronto per consulenza e confronto.</div>
+        <div class="mt-1 text-sm text-slate-600">PDF pronto per confronto e consulenza.</div>
+      </div>
+    </section>
+
+    <section id="come-funziona" class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white border rounded-2xl p-6 shadow-soft">
+        <h2 class="text-lg font-semibold">Come funziona</h2>
+        <ol class="mt-4 space-y-4 text-sm text-slate-600">
+          <li class="flex gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-alleanza-blue text-white text-xs font-semibold">1</span>
+            Inserisci i dati principali (età, RAL, anno di assunzione).
+          </li>
+          <li class="flex gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-alleanza-blue text-white text-xs font-semibold">2</span>
+            Personalizza ipotesi e versamenti volontari se desideri.
+          </li>
+          <li class="flex gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-alleanza-blue text-white text-xs font-semibold">3</span>
+            Visualizza i risultati e scarica il PDF condivisibile.
+          </li>
+        </ol>
+      </div>
+      <div class="bg-white border rounded-2xl p-6 shadow-soft">
+        <h2 class="text-lg font-semibold">Perché usarlo</h2>
+        <ul class="mt-4 space-y-3 text-sm text-slate-600">
+          <li class="flex items-start gap-2">
+            <span class="mt-1 h-2 w-2 rounded-full bg-alleanza-orange"></span>
+            Ti aiuta a capire l'impatto della fiscalità sul capitale finale.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-1 h-2 w-2 rounded-full bg-alleanza-orange"></span>
+            Offre una visione comparativa, utile per decisioni informate.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-1 h-2 w-2 rounded-full bg-alleanza-orange"></span>
+            Riduce il tempo necessario per preparare una consulenza.
+          </li>
+        </ul>
+        <div class="mt-6 rounded-xl border bg-slate-50 p-4 text-xs text-slate-500">
+          I risultati sono stime basate sulle ipotesi inserite e non rappresentano garanzia di rendimento.
+        </div>
       </div>
     </section>
 

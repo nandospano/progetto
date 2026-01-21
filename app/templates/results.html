@@ -5,28 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Report PDF - Risultati</title>
 
-  <!-- Tailwind config corretto -->
   <script>
-    tailwind.config = {
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
       theme: {
         extend: {
           colors: {
-            "alleanza-blue": "#003A70",
-            "alleanza-orange": "#F37021",
+            alleanza: {
+              blue: "#0B2E5B",
+              orange: "#F37021"
+            }
           }
         }
       }
     };
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card { border-radius: 1.25rem; border: 1px solid #e2e8f0; background: #fff; }
+  </style>
 </head>
 
 <body class="bg-white text-slate-900">
   <main class="max-w-6xl mx-auto px-6 py-8">
     <div class="flex items-center justify-between">
-      <h1 class="text-xl font-semibold">Report simulazione</h1>
+      <div>
+        <h1 class="text-xl font-semibold">Report simulazione</h1>
+        <p class="text-xs text-slate-500">Sintesi risultati e confronto finale</p>
+      </div>
       <div class="text-xs text-slate-500">ID: {{ rid }}</div>
     </div>
 
@@ -45,8 +52,8 @@
       </div>
     </section>
 
-    <section class="mt-4 grid grid-cols-2 gap-4">
-      <div class="border rounded-2xl p-5">
+    <section class="mt-4 grid grid-cols-3 gap-4">
+      <div class="card p-5">
         <div class="text-sm text-slate-500">TFR in azienda (netto)</div>
         <div class="mt-2 text-2xl font-semibold">€ {{ "{:,.0f}".format(result.tfr.net).replace(",", ".") }}</div>
         <div class="mt-2 text-sm text-slate-600">
@@ -54,16 +61,22 @@
         </div>
       </div>
 
-      <div class="border rounded-2xl p-5">
+      <div class="card p-5">
         <div class="text-sm text-slate-500">PIP (netto)</div>
         <div class="mt-2 text-2xl font-semibold">€ {{ "{:,.0f}".format(result.pip.net).replace(",", ".") }}</div>
         <div class="mt-2 text-sm text-slate-600">
           Tasse totali: <span class="font-medium text-rose-600">€ {{ "{:,.0f}".format(result.pip.tax_total).replace(",", ".") }}</span>
         </div>
       </div>
+
+      <div class="card p-5">
+        <div class="text-sm text-slate-500">Beneficio fiscale stimato</div>
+        <div class="mt-2 text-2xl font-semibold">€ {{ "{:,.0f}".format(result.tax_benefit.saving_total).replace(",", ".") }}</div>
+        <div class="mt-2 text-xs text-slate-500">(solo su versamenti volontari)</div>
+      </div>
     </section>
 
-    <section class="mt-4 border rounded-2xl p-5">
+    <section class="mt-4 card p-5">
       <div class="flex items-center justify-between">
         <h2 class="font-semibold">Evoluzione nel tempo</h2>
         <div class="text-sm text-slate-500">Anni simulati: {{ result.years }}</div>
@@ -73,10 +86,39 @@
       </div>
     </section>
 
+    <section class="mt-4 card p-5">
+      <h2 class="font-semibold">Assunzioni principali</h2>
+      <div class="mt-4 grid grid-cols-6 gap-3 text-center text-xs">
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500">Inflazione</div>
+          <div class="font-semibold">{{ "{:,.2f}".format(result.assumptions.inflation_avg_pct).replace(",", ".") }}%</div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500">Rivalut. TFR</div>
+          <div class="font-semibold">{{ "{:,.2f}".format(result.assumptions.tfr_reval_rate_pct).replace(",", ".") }}%</div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500">Linea PIP</div>
+          <div class="font-semibold">{{ result.assumptions.pip_line }}</div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500">Rend. atteso</div>
+          <div class="font-semibold">{{ "{:,.2f}".format(result.assumptions.pip_return_gross_pct).replace(",", ".") }}%</div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500">Caricamento</div>
+          <div class="font-semibold">{{ "{:,.2f}".format(result.assumptions.pip_load_fee_pct).replace(",", ".") }}%</div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500">Tassa finale PIP</div>
+          <div class="font-semibold">{{ "{:,.2f}".format(result.assumptions.pip_final_tax_pct).replace(",", ".") }}%</div>
+        </div>
+      </div>
+    </section>
+
     <script type="application/json" id="chart-data">{{ result.series | tojson }}</script>
 
     <script>
-      // flag per Playwright
       window.__chartReady = false;
 
       try {
@@ -87,8 +129,8 @@
           data: {
             labels: series.ages,
             datasets: [
-              { label: "TFR Azienda", data: series.tfr, tension: 0.25 },
-              { label: "PIP", data: series.pip, tension: 0.25 },
+              { label: "TFR Azienda", data: series.tfr, tension: 0.25, borderColor: "#0B2E5B" },
+              { label: "PIP", data: series.pip, tension: 0.25, borderColor: "#F37021" },
             ]
           },
           options: {
