@@ -21,3 +21,9 @@ Thumbs.db
 
 # PDF (se non vuoi caricare documenti ufficiali)
 *.pdf
+
+.env
+*.env
+.env.*
+__pycache__/
+*.log
