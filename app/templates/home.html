@@ -44,6 +44,11 @@
                class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-alleanza-blue text-white hover:opacity-95">
               Avvia simulazione
             </a>
+            <button type="button"
+                    data-open-sync-modal
+                    class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+              Allinea GitHub & Render
+            </button>
             <a href="#come-funziona"
                class="inline-flex items-center justify-center px-5 py-3 rounded-xl border bg-white hover:bg-slate-50">
               Come funziona
@@ -133,5 +138,68 @@
       Strumento a scopo informativo: non costituisce consulenza finanziaria, fiscale o previdenziale personalizzata.
     </p>
   </main>
+
+  <div id="sync-modal"
+       class="fixed inset-0 hidden items-center justify-center bg-slate-900/60 px-6 py-10">
+    <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-soft">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold">Allinea GitHub & Render</h2>
+          <p class="mt-1 text-sm text-slate-600">
+            Da questa pagina non posso fare il push automaticamente: serve il tuo PC.
+            Però qui trovi i passaggi esatti.
+          </p>
+        </div>
+        <button type="button"
+                data-close-sync-modal
+                class="rounded-lg border px-3 py-1 text-xs text-slate-600 hover:bg-slate-50">
+          Chiudi
+        </button>
+      </div>
+      <div class="mt-5 space-y-4 text-sm text-slate-600">
+        <div class="rounded-xl border bg-slate-50 p-4">
+          <div class="font-medium text-slate-800">1) Allinea la tua cartella locale</div>
+          <pre class="mt-2 overflow-x-auto text-xs text-slate-700"><code>git status
+git add .
+git commit -m "Sync locale con GitHub"
+git push</code></pre>
+        </div>
+        <div class="rounded-xl border bg-slate-50 p-4">
+          <div class="font-medium text-slate-800">2) Controlla GitHub</div>
+          <p class="mt-2 text-xs">
+            Verifica che su GitHub ci siano <strong>requirements.txt</strong> e <strong>app/main.py</strong>.
+          </p>
+        </div>
+        <div class="rounded-xl border bg-slate-50 p-4">
+          <div class="font-medium text-slate-800">3) Imposta Render</div>
+          <pre class="mt-2 overflow-x-auto text-xs text-slate-700"><code>Start command:
+python -m uvicorn app.main:app --host 0.0.0.0 --port 10000</code></pre>
+          <p class="mt-2 text-xs">Assicurati che Render usi lo stesso branch del tuo push.</p>
+        </div>
+      </div>
+      <p class="mt-4 text-xs text-slate-500">
+        Se vuoi, puoi tenere aperta questa guida mentre fai i passaggi sul tuo PC.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const openSyncModal = document.querySelector("[data-open-sync-modal]");
+    const closeSyncModal = document.querySelector("[data-close-sync-modal]");
+    const syncModal = document.getElementById("sync-modal");
+
+    const toggleSyncModal = (shouldOpen) => {
+      syncModal.classList.toggle("hidden", !shouldOpen);
+      syncModal.classList.toggle("flex", shouldOpen);
+    };
+
+    openSyncModal?.addEventListener("click", () => toggleSyncModal(true));
+    closeSyncModal?.addEventListener("click", () => toggleSyncModal(false));
+    syncModal?.addEventListener("click", (event) => {
+      if (event.target === syncModal) {
+        toggleSyncModal(false);
+      }
+    });
+  </script>
 </body>
 </html>
